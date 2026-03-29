@@ -26,7 +26,7 @@ public:
 	 * @return - whether the Save failed or succeeded.
 	 */
 	UFUNCTION(BlueprintCallable, Category = "SaveSubSystem")
-	bool Save(const FString& SlotName, const AActor* Actor);
+	bool Save(const FString& SlotName, AActor* Actor);
 
 	/**
 	 * 

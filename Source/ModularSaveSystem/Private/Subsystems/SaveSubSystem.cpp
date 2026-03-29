@@ -2,6 +2,8 @@
 
 
 #include "Interfaces/SaveableInterface.h"
+#include "Kismet/GameplayStatics.h"
+#include "SaveGame/SaveGameData.h"
 #include "Subsystems/SaveSubsystem.h"
 
 void USaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -14,33 +16,75 @@ void USaveSubsystem::Deinitialize()
 	Super::Deinitialize();
 }
 
-bool USaveSubsystem::Save(const FString& SlotName, const AActor* Actor)
+bool USaveSubsystem::Save(const FString& SlotName, AActor* Actor)
 {
-	// Write the function logic This Line.
-	 /**
-	* 	1. We need to check validity of SlotName is it empty if yes return false with log
-	* 	2. we need to check if the actor is valid and implements the SaveableInerface, if not then return false with log
-	* 	3. Get the Guid of the Actor using the GetSaveGuid ans store it locally in LocalGuid
-	* 	4. create a local Variable of type TMap<FGuid, FActorSaveData> LocalGameData 
-	* 	4. check if a Save Game exist
-	* 	5. YES - then get the save game cast it to USaveGameData, cast failed return false with log
-	* 		5.1 - get the GameData varaible from USaveGameData
-	* 		5.2 - LocalGameData = GameData from the SaveGame
-	* 		5.2 - check if the LocalGuid already exists in LocalGameData
-	* 		5.3 - YES - Find and remove the Data. 
-	* 	6 - Add the TMap to LocalGameData.Add(LocalGuid, Actor->GetSaveData() "we will figure out how the tmap will be converted to struct later")
-    * 	8 - Create a new save game cast it to SaveGameData and set the Game Data = LocalGameData.
-    * 	9 - Save game to slot 
-	  */
-
 	if (SlotName.IsEmpty())
 	{
 		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Save : SlotName is empty"));
 		return false;
 	}
 
-	if (Actor == nullptr || !Actor->Implements<ISaveableInterface>())
-	
+	if (Actor == nullptr || !Actor->Implements<USaveableInterface>())
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Save : Invalid Actor passed"));
+		return false;
+	}
+
+	FGuid ActorGuid = ISaveableInterface::Execute_GetSaveGuid(Actor);
+	if (! ActorGuid.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Save : Actor Guid is Invalid"));
+		return false;
+	}	
+
+	TMap<FGuid, FActorSaveData> LocalGameData;
+
+	if (UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	{
+		USaveGame* OldSaveGame = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
+		if (OldSaveGame == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Save : Could not Get the existing Save File"));
+			return false;
+		}
+		USaveGameData* OldSaveGameData = Cast<USaveGameData>(OldSaveGame);
+		if (OldSaveGameData == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Save : Cast to USaveGameData failed from Old Save Game"));
+			return false;
+		}
+
+		LocalGameData = OldSaveGameData->GameData;
+
+		if (LocalGameData.Contains(ActorGuid))
+		{
+			LocalGameData.Remove(ActorGuid);
+		}
+	}
+
+	LocalGameData.Add(ActorGuid, FActorSaveData(ISaveableInterface::Execute_GetSaveData(Actor)));
+
+	USaveGame* NewSaveGame = UGameplayStatics::CreateSaveGameObject(USaveGameData::StaticClass());
+	if (NewSaveGame == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Save : Could not create new Save Game"));
+		return false;
+	}
+
+	USaveGameData* NewSaveGameData = Cast<USaveGameData>(NewSaveGame);
+	if (NewSaveGameData == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Save : Cast to USaveGameData failed from New Save Game"));
+		return false;
+	}
+
+	NewSaveGameData->GameData = LocalGameData;
+
+	if (! UGameplayStatics::SaveGameToSlot(NewSaveGameData, SlotName, 0))
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Save : Could not save game to Slot: %s"), *SlotName);
+		return false;
+	}
 	
 	return true;
 }
@@ -61,6 +105,61 @@ bool USaveSubsystem::Load(const FString& SlotName, AActor* Actor)
    * 			4.3.2 - Guid Not Found - return false wiht log.
    * 	5. No - return false with log
 	 */
+
+	//1. 
+	if (SlotName.IsEmpty())
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : SlotName is empty"));
+		return false;
+	}
+	//2. 
+	if (Actor == nullptr || !Actor->Implements<USaveableInterface>())
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : Invalid Actor passed"));
+		return false;
+	}
+	
+	FGuid ActorGuid = ISaveableInterface::Execute_GetSaveGuid(Actor);
+	if (! ActorGuid.IsValid())
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : Actor Guid is Invalid"));
+		return false;
+	}
+
+	//3.
+	if (! UGameplayStatics::DoesSaveGameExist(SlotName, 0))
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : Save file does not exist in Slot: %s"), *SlotName);
+		return false;
+	}
+
+	//4.
+	//4.1
+	USaveGame* SaveGame = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
+
+	//4.2
+	if (SaveGame == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : Could not load Save "));
+		return false;
+	}
+
+	USaveGameData* SaveGameData = Cast<USaveGameData>(SaveGame);
+	if (SaveGameData == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : cast to USaveGameData failed"));
+		return false;
+	}
+
+	//4.3.2
+	if (! SaveGameData->GameData.Contains(ActorGuid))
+	{
+		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : ACtor Guid does not exist"));
+		return false;
+	}
+
+	//4.3.1
+	ISaveableInterface::Execute_RestoreSaveData(Actor, SaveGameData->GameData.Find(ActorGuid)->SaveData);
 	
 	return true;
 }
