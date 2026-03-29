@@ -33,5 +33,15 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "SaveableInterface")
 	void RestoreSaveData(const TMap<FString, FString>& InData);
+
+	/**
+	 * This function returns a FGuid which is a unique Identifier.
+	 * This Guid will be used to uniquely identify the implemented class's Save Data
+	 * @note - its recommended that the function Implementor create a FGuid Variable with appropriate UPROPERTY details
+	 * and set the variable in constructor(c++) or ConstructorScript(Blueprints) of the class, so that each instance has a unique ID.
+	 * @return - A unique ID Associated with the Interface Implementor
+	 */
+	UFUNCTION(BlueprintNativeEvent, Category = "SaveableInterface")
+	FGuid GetSaveGuid() const;
 	
 };
