@@ -91,28 +91,13 @@ bool USaveSubsystem::Save(const FString& SlotName, AActor* Actor)
 
 bool USaveSubsystem::Load(const FString& SlotName, AActor* Actor)
 {
-	// Write the function logic This Line.
-
-	/**
-   * 	1. We need to check validity of SlotName is it empty if yes return false with log
-   * 	2. we need to check if the actor is valid and implements the SaveableInerface, if not then return false with log
-   * 	3. Does Save Game exist
-   * 	4. YES
-   * 		4.1 - load save game from slot
-   * 		4.2 - check loaded save game validiy and cast it to USaveGameData, if either fails return false with log
-   * 		4.3 - Get Game Data Variable from SaveGameData and check if the Actor->GetSaveGuid() exists in the TMap.
-   * 			4.3.1 - Guid Found - call RestoreSaveData on Actor with passing GameData.value.SaveData retunr true wiht log.
-   * 			4.3.2 - Guid Not Found - return false wiht log.
-   * 	5. No - return false with log
-	 */
-
-	//1. 
+	
 	if (SlotName.IsEmpty())
 	{
 		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : SlotName is empty"));
 		return false;
 	}
-	//2. 
+ 
 	if (Actor == nullptr || !Actor->Implements<USaveableInterface>())
 	{
 		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : Invalid Actor passed"));
@@ -126,18 +111,17 @@ bool USaveSubsystem::Load(const FString& SlotName, AActor* Actor)
 		return false;
 	}
 
-	//3.
+
 	if (! UGameplayStatics::DoesSaveGameExist(SlotName, 0))
 	{
 		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : Save file does not exist in Slot: %s"), *SlotName);
 		return false;
 	}
 
-	//4.
-	//4.1
+
 	USaveGame* SaveGame = UGameplayStatics::LoadGameFromSlot(SlotName, 0);
 
-	//4.2
+
 	if (SaveGame == nullptr)
 	{
 		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : Could not load Save "));
@@ -151,14 +135,12 @@ bool USaveSubsystem::Load(const FString& SlotName, AActor* Actor)
 		return false;
 	}
 
-	//4.3.2
 	if (! SaveGameData->GameData.Contains(ActorGuid))
 	{
 		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Load : ACtor Guid does not exist"));
 		return false;
 	}
 
-	//4.3.1
 	ISaveableInterface::Execute_RestoreSaveData(Actor, SaveGameData->GameData.Find(ActorGuid)->SaveData);
 	
 	return true;
