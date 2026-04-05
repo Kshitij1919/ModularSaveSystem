@@ -4,17 +4,86 @@
 #include "Interfaces/SaveableInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "SaveGame/SaveGameData.h"
+#include "SaveGame/SaveSlotRegistry.h"
 #include "Subsystems/SaveSubsystem.h"
+
+const FString USaveSubsystem::SaveRegistryName = FString("SaveSlotRegistry");
 
 void USaveSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 {
 	Super::Initialize(Collection);
+
+	InitializeSaveSlotNames();
 }
 
 void USaveSubsystem::Deinitialize()
 {
 	Super::Deinitialize();
 }
+
+void USaveSubsystem::InitializeSaveSlotNames()
+{
+	if (! UGameplayStatics::DoesSaveGameExist(SaveRegistryName, 0))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No Save Game with %s slot name exists - Assumed First Launch"), *SaveRegistryName);
+		return; 
+	}
+
+	USaveGame* SaveGame = UGameplayStatics::LoadGameFromSlot(SaveRegistryName, 0);
+	if (SaveGame == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Could not load Save Game with %s slot name "), *SaveRegistryName);
+		return;
+	}
+
+	USaveSlotRegistry* SlotRegistrySaveGame = Cast<USaveSlotRegistry>(SaveGame);
+	if (SlotRegistrySaveGame == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cast to USaveSlotRegistry Failed"));
+		return;
+	}
+
+	SaveSlotNames = SlotRegistrySaveGame->SlotNames;
+}
+
+void USaveSubsystem::PersistSlotRegistry(const FString& SlotName)
+{
+	USaveGame* SaveGame;
+	if (UGameplayStatics::DoesSaveGameExist(SaveRegistryName, 0))
+	{
+		SaveGame = UGameplayStatics::LoadGameFromSlot(SaveRegistryName, 0);
+		if (SaveGame == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Save Game Could not be loaded at slot %s"), *SlotName);
+			return;
+		}
+	}
+	else
+	{
+		SaveGame = UGameplayStatics::CreateSaveGameObject(USaveSlotRegistry::StaticClass());
+		if (SaveGame == nullptr)
+		{
+			UE_LOG(LogTemp, Error, TEXT("Save Game Could not be Created at slot %s"), *SlotName);
+			return;
+		}
+	}
+	
+	USaveSlotRegistry* SlotRegistrySaveGame = Cast<USaveSlotRegistry>(SaveGame);
+	if (SlotRegistrySaveGame == nullptr)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Cast to USaveSlotRegistry Failed while trying to add new Slot Name"));
+		return;
+	}
+
+	SlotRegistrySaveGame->SlotNames.Add(SlotName);
+	SaveSlotNames = SlotRegistrySaveGame->SlotNames;
+
+	if (! UGameplayStatics::SaveGameToSlot(SlotRegistrySaveGame, SaveRegistryName, 0))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Could not save Save Game with %s slot name "), *SlotName);
+	}
+}
+
 
 bool USaveSubsystem::Save(const FString& SlotName, AActor* Actor)
 {
@@ -85,6 +154,11 @@ bool USaveSubsystem::Save(const FString& SlotName, AActor* Actor)
 		UE_LOG(LogTemp, Error, TEXT("USaveSubsystem::Save : Could not save game to Slot: %s"), *SlotName);
 		return false;
 	}
+
+	if (! SaveSlotNames.Contains(SlotName))
+	{
+		PersistSlotRegistry(SlotName);
+	}
 	
 	return true;
 }
@@ -142,6 +216,63 @@ bool USaveSubsystem::Load(const FString& SlotName, AActor* Actor)
 	}
 
 	ISaveableInterface::Execute_RestoreSaveData(Actor, SaveGameData->GameData.Find(ActorGuid)->SaveData);
+	
+	return true;
+}
+
+TArray<FString> USaveSubsystem::GetAllSaveSlotNames() const
+{
+	return SaveSlotNames;
+}
+
+bool USaveSubsystem::DoesSaveSlotExistInSlotRegistry(const FString& SlotName) const
+{
+	return SaveSlotNames.Contains(SlotName);
+}
+
+bool USaveSubsystem::DeleteSaveSlotFromRegistry(const FString& SlotName)
+{
+	
+	if (! DoesSaveSlotExistInSlotRegistry(SlotName))
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Removal Failed!! Save Slot name: %s Does not exist in Registry"), *SlotName);
+		return false;
+	}
+
+	if (! UGameplayStatics::DoesSaveGameExist(SaveRegistryName, 0))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Removal Failed!! Could not Find SaveSlot Registry with Slot Name: %s"), *SaveRegistryName);
+		return false;
+	}
+	
+	USaveGame* SaveGame = UGameplayStatics::LoadGameFromSlot(SaveRegistryName, 0);
+	if (SaveGame == nullptr)
+	{
+		UE_LOG(LogTemp,Error, TEXT("Removal Failed!! Could not load SaveSlot Registry with Slot Name: %s"), *SaveRegistryName);
+		return false;
+	}
+
+	USaveSlotRegistry* SlotRegistrySaveGame = Cast<USaveSlotRegistry>(SaveGame);
+	if (SlotRegistrySaveGame == nullptr)
+	{
+		UE_LOG(LogTemp,Error, TEXT("Removal Failed!! Cast to USaveSlotRegistry failed"));
+		return false;
+	}
+
+	SlotRegistrySaveGame->SlotNames.Remove(SlotName);
+	SaveSlotNames = SlotRegistrySaveGame->SlotNames;
+
+	if (! UGameplayStatics::SaveGameToSlot(SlotRegistrySaveGame, SaveRegistryName, 0))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Could Not Save the Updated Slot Registry"));
+		return false;
+	}
+	
+	if (! UGameplayStatics::DeleteGameInSlot(SlotName, 0))
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to Delete Save: %s"), *SlotName);
+		return false;
+	}
 	
 	return true;
 }
