@@ -31,3 +31,13 @@ data intact when your implementation changes.
 - **Slot registry management** — three clean operations: check if a slot exists, save to create it, and delete it. All persisted automatically across sessions without any manual registry handling.
 
 ---
+
+## Known Limitations
+
+- **No async support** — the plugin currently lacks async save and load support. On levels with many saveable actors this may cause a noticeable hitch on the game thread.
+
+- **No full native type support** — the plugin does not have full native UE data type support. Types such as `FVector`, `FRotator`, and `FTransform` require manual string conversion by the user. Serialisation helper nodes for all common types are planned for v1.0.
+
+- **Level streaming incompatibility** — the plugin uses `ActorGuid` to uniquely identify saveable actors. This works correctly for standard levels but is not compatible with level streaming, where `ActorInstanceGuid` should be used instead. Developers using level streaming should be aware of this before integrating the plugin.
+
+---
