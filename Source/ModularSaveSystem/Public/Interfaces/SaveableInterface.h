@@ -35,6 +35,15 @@ public:
 	void RestoreSaveData(const TMap<FString, FString>& InData);
 
 	/**
+	 * Description- This function will be called on the Class whose Version number does not match with its Saved Data Version Number.
+	 * @param SaveFileVersionNumber - The Version Number on the save File
+	 * @param ExpectedVersionNumber - The Expected version number
+	 * @param PreviousSaveFileData - The Data in question, Game Data saved on the file.
+	 */
+	UFUNCTION(BlueprintNativeEvent, Category = "SaveableInterface")
+	void OnSaveVersionMismatch(int32 SaveFileVersionNumber, int32 ExpectedVersionNumber, const TMap<FString, FString>& PreviousSaveFileData);
+
+	/**
 	 * This function returns a FGuid which is a unique Identifier.
 	 * This Guid will be used to uniquely identify the implemented class's Save Data
 	 * @note - its recommended that the function Implementor create a FGuid Variable with appropriate UPROPERTY details
@@ -43,5 +52,15 @@ public:
 	 */
 	UFUNCTION(BlueprintNativeEvent, Category = "SaveableInterface")
 	FGuid GetSaveGuid() const;
+
+	/**
+	 * Description - This function returns the Version number of the SaveData for version matching
+	 * @note - By default the version number of any Savable Data will be 0(Intended).
+	 * @note - A version Number is always meant to be Signed int32.
+	 * @note - if the user wishes to make any changes to the existing data. they should maintain a version Number variable of type int32.
+	 * @return - returns the Version Number 
+	 */
+	UFUNCTION(BlueprintNativeEvent, Category = "SaveableInterface")
+	int32 GetSaveDataVersion() const;
 	
 };

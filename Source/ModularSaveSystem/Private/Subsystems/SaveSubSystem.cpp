@@ -131,7 +131,7 @@ bool USaveSubsystem::Save(const FString& SlotName, AActor* Actor)
 		}
 	}
 
-	LocalGameData.Add(ActorGuid, FActorSaveData(ISaveableInterface::Execute_GetSaveData(Actor)));
+	LocalGameData.Add(ActorGuid, FActorSaveData(ISaveableInterface::Execute_GetSaveData(Actor), ISaveableInterface::Execute_GetSaveDataVersion(Actor)));
 
 	USaveGame* NewSaveGame = UGameplayStatics::CreateSaveGameObject(USaveGameData::StaticClass());
 	if (NewSaveGame == nullptr)
@@ -215,7 +215,19 @@ bool USaveSubsystem::Load(const FString& SlotName, AActor* Actor)
 		return false;
 	}
 
-	ISaveableInterface::Execute_RestoreSaveData(Actor, SaveGameData->GameData.Find(ActorGuid)->SaveData);
+	const FActorSaveData& ActorSaveData = *SaveGameData->GameData.Find(ActorGuid);
+	
+	if (ActorSaveData.SaveDataVersionNumber == ISaveableInterface::Execute_GetSaveDataVersion(Actor))
+	{
+		ISaveableInterface::Execute_RestoreSaveData(Actor, ActorSaveData.SaveData);
+	}
+	else
+	{
+		ISaveableInterface::Execute_OnSaveVersionMismatch(Actor,
+												   ActorSaveData.SaveDataVersionNumber,
+												   ISaveableInterface::Execute_GetSaveDataVersion(Actor),
+												   ActorSaveData.SaveData);
+	}
 	
 	return true;
 }
