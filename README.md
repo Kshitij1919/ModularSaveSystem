@@ -5,6 +5,17 @@
 
 ---
 
+## Table of Contents
+
+- [What It Solves](#what-it-solves)
+- [Features](#features)
+- [Known Limitations](#known-limitations)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Roadmap](#roadmap)
+
+---
+
 ## What It Solves
 
 This save system will save you from the redundant boilerplate load-cast-modify-save 
