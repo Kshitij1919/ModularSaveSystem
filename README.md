@@ -52,3 +52,30 @@ data intact when your implementation changes.
 - **Level streaming incompatibility** — the plugin uses `ActorGuid` to uniquely identify saveable actors. This works correctly for standard levels but is not compatible with level streaming, where `ActorInstanceGuid` should be used instead. Developers using level streaming should be aware of this before integrating the plugin.
 
 ---
+
+## Installation
+
+> **Prerequisite:** This plugin requires a C++ UE5 project and Visual Studio 2022 with the **Game Development with C++** workload installed. Blueprint-only projects must be converted first — [see Epic's guide here](https://dev.epicgames.com/community/learning/courses/KJ/unreal-engine-converting-blueprint-to-c).
+
+---
+
+### Method 1 — Project Plugin (Recommended)
+
+1. Download the zip from the **Code** section of this repository
+2. Extract the zip
+3. Navigate to your project's root directory
+4. If a `Plugins` folder does not exist, create one
+5. Copy the `ModularSaveSystem` folder into `[YourProject]/Plugins/`
+6. Right click the `.uproject` file → **Generate Visual Studio project files**
+7. Open your project → `Edit → Plugins` → search **Modular Save System** → Enable → Restart Editor
+
+---
+
+### Method 2 — Engine Plugin
+
+1. Download the zip from the **Code** section of this repository
+2. Extract the zip
+3. Copy the `ModularSaveSystem` folder into `[UE5 Install Directory]/Engine/Plugins/`
+4. Open any C++ project → `Edit → Plugins` → search **Modular Save System** → Enable → Restart Editor
+
+---
