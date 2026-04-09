@@ -10,13 +10,13 @@ decisions.
 ## High Level Overview
 
 [ Any Actor + ISaveableInterface ]
-        |
-        | (Subsystem calls through interface)
-        v
+|
+| (Subsystem calls through interface)
+v
 [ USaveSubsystem ]
-        |
-        | (Reads and writes)
-        v
+|
+| (Reads and writes)
+v
 [ USaveGameData ]
 
 The Subsystem is the only class that talks to the other two.
