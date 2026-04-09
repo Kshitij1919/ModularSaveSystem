@@ -79,3 +79,87 @@ data intact when your implementation changes.
 4. Open any C++ project → `Edit → Plugins` → search **Modular Save System** → Enable → Restart Editor
 
 ---
+
+## Quick Start
+
+### Blueprint
+
+**Step 1 — Add the Saveable Interface to your Actor**
+
+Open your Blueprint, go to **Class Settings** → **Implemented Interfaces** → **Add** → search for **Saveable Interface**.
+
+![ClassSettings](https://github.com/user-attachments/assets/b4f031db-75c8-46e1-be97-189923586dd5)
+
+---
+
+**Step 2 — Implement GetSaveGuid**
+
+Return your Actor's built-in `ActorGuid`. This uniquely identifies your actor in the save file.
+
+![GetSaveGuid](https://github.com/user-attachments/assets/4d35855d-35b3-4fea-959d-25c7b09e9878)
+
+---
+
+**Step 3 — Implement GetSaveData**
+
+Build a `TMap<FString, FString>` using the **Make Map** node. Add one entry per property you want to save — each property needs a unique string key and a string value. Use **Convert to String** nodes to convert non-string types before connecting them as values.
+
+![GetSaveData](https://github.com/user-attachments/assets/41622567-a353-45ef-b0dd-96ce42964e4c)
+
+---
+
+**Step 4 — Implement RestoreSaveData**
+
+Use **Find** to retrieve each value by its key from the incoming map. Check the result is valid using a **Branch** node before applying it back to your properties. For bool types use the **FString to Bool Default** helper node from the plugin's Blueprint Library.
+
+> **Note:** For float properties, use **Kismet String Library → String to Float** to convert the retrieved string value before setting it.
+
+![RestoreSaveData](https://github.com/user-attachments/assets/660008a5-dd6c-43dc-becf-b5128577fe74)
+
+---
+
+### C++
+
+Inherit from `ISaveableInterface` and implement the three functions. Replace `YOURPROJECT_API` with your project's API macro.
+
+**.h**
+```cpp
+#include "Interfaces/SaveableInterface.h"
+
+UCLASS()
+class YOURPROJECT_API AMyActor : public AActor, public ISaveableInterface
+{
+    GENERATED_BODY()
+
+public:
+    virtual TMap<FString, FString> GetSaveData_Implementation() const override;
+    virtual void RestoreSaveData_Implementation(const TMap<FString, FString>& InData) override;
+    virtual FGuid GetSaveGuid_Implementation() const override;
+};
+```
+
+**.cpp**
+```cpp
+TMap<FString, FString> AMyActor::GetSaveData_Implementation() const
+{
+    TMap<FString, FString> Data;
+    Data.Add(TEXT("MyKey"), MyStringValue);
+    return Data;
+}
+
+void AMyActor::RestoreSaveData_Implementation(const TMap<FString, FString>& InData)
+{
+    const FString* Value = InData.Find(TEXT("MyKey"));
+    if (Value)
+    {
+        MyStringValue = *Value;
+    }
+}
+
+FGuid AMyActor::GetSaveGuid_Implementation() const
+{
+    return ActorGuid;
+}
+```
+
+---
