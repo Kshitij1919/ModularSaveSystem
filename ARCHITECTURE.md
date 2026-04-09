@@ -9,7 +9,7 @@ decisions.
 
 ## High Level Overview
 
-​```
+```
 [ Any Actor + ISaveableInterface ]
               |
               | (Subsystem calls through interface)
@@ -19,7 +19,7 @@ decisions.
               | (Reads and writes)
               v
       [ USaveGameData ]
-​```
+```
 ---
 
 ## The Three Layers
