@@ -102,7 +102,7 @@ Return your Actor's built-in `ActorGuid`. This uniquely identifies your actor in
 
 **Step 3 — Implement GetSaveData**
 
-Build a `TMap<FString, FString>` using the **Make Map** node. Add one entry per property you want to save — each property needs a unique string key and a string value. Use **Convert to String** nodes to convert non-string types before connecting them as values.
+Build a TMap<FString, FString> using the Make Map node. Add one entry per property you want to save — each property needs a unique string key and a string value. For non-string types such as float and bool, connect them directly to the value pin — UE5 will automatically insert the correct conversion node.
 
 ![GetSaveData](https://github.com/user-attachments/assets/41622567-a353-45ef-b0dd-96ce42964e4c)
 
