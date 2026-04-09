@@ -9,19 +9,17 @@ decisions.
 
 ## High Level Overview
 
+​```
 [ Any Actor + ISaveableInterface ]
-|
-| (Subsystem calls through interface)
-v
-[ USaveSubsystem ]
-|
-| (Reads and writes)
-v
-[ USaveGameData ]
-
-The Subsystem is the only class that talks to the other two.
-The Interface and USaveGameData have no knowledge of each other.
-
+              |
+              | (Subsystem calls through interface)
+              v
+      [ USaveSubsystem ]
+              |
+              | (Reads and writes)
+              v
+      [ USaveGameData ]
+​```
 ---
 
 ## The Three Layers
