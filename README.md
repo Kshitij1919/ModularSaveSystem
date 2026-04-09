@@ -163,3 +163,22 @@ FGuid AMyActor::GetSaveGuid_Implementation() const
 ```
 
 ---
+
+## Roadmap
+
+This plugin is currently in **v0.1-beta**. The following features are planned for **v1.0**:
+
+- Async Save and Load support
+- Serialisation helper nodes for common UE types (`FVector`, `FRotator`, `FTransform`, `int32`, `float`)
+- Detailed error reporting — result enum replacing the current bool return
+- Max slot count and slot name validation
+
+Post v1.0:
+- Save slot metadata — timestamps, playtime, and custom fields per slot
+- Automated test coverage
+- Demo project
+- Editor Save Slot Inspector
+- Save data encryption
+- Save data compression
+
+---
